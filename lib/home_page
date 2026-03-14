@@ -1,0 +1,109 @@
+class HomePage extends StatelessWidget {
+  const HomePage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Color(0xFFeedfd7),
+      appBar: AppBar(),
+
+      drawer: Drawer(
+        child: ListView(
+          children: [
+            DrawerHeader(child: Text("Menu")),
+            ListTile(title: Text("Scan Your Item"),
+             onTap: () {
+               Navigator.push(
+                 context,
+                 MaterialPageRoute(
+                builder: (context) => const ScannerPage(),
+      ),
+    );
+  },),
+            ListTile(title: Text("Past Scans"),
+             onTap: () {
+               Navigator.push(
+                 context,
+                 MaterialPageRoute(
+                builder: (context) => const PastScansPage(),
+      ),
+    );
+  },),
+            ListTile(title: Text("Recent Recalls"),
+            onTap: () {
+               Navigator.push(
+                 context,
+                 MaterialPageRoute(
+                builder: (context) => const RecentRecallsPage(),
+      ),
+    );
+  },),
+            ListTile(title: Text("How It Works")),
+          ],
+        ),
+      ),
+
+      body: Center(
+  child: ConstrainedBox(
+    constraints: const BoxConstraints(maxWidth: 600),
+    child: Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Column(
+        children: [
+
+          const SizedBox(height: 80),
+
+          Text(
+  "SafePantry",
+  style: GoogleFonts.paytoneOne(
+    color: const Color(0xFF1e3504),
+    fontSize: 45,
+    fontWeight: FontWeight.bold,
+    height: 1.1, 
+    letterSpacing: 2,
+  
+      ),
+      ),
+
+          const SizedBox(height: 20),
+
+          Text(
+            "Scan food items instantly to check if they’ve been recalled. Powered by USDA / FDA data.",
+            textAlign: TextAlign.center,
+            style: GoogleFonts.syne(fontSize: 16),
+          ),
+
+          // This pushes everything below to the bottom
+          const Spacer(),
+
+          SizedBox(
+            width: 260,
+            height: 55,
+            child: ElevatedButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const ScannerPage(),
+                  ),
+                );
+              },
+              child:  Text(
+                "Scan Your Item",
+                style: GoogleFonts.syne(fontSize: 18,
+          color: Color(0xFF1e3504)),
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 40), // optional padding from bottom
+        ],
+      ),
+    ),
+  ),
+),
+    );
+  }
+}
+
+
