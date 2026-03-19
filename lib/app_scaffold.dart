@@ -4,6 +4,7 @@ import 'scanner_page.dart';
 import 'past_scans_page.dart';
 import 'recent_recalls_page.dart';
 import 'home_page.dart';
+import 'login_page.dart';
 
 class AppScaffold extends StatelessWidget {
   final String title;
@@ -33,6 +34,18 @@ class AppScaffold extends StatelessWidget {
                           );
                         },
                       ),
+
+            ListTile(
+              title: const Text("Login"),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const LoginPage(),
+                  ),
+                );
+              },
+            ),
 
 
             ListTile(
