@@ -1,0 +1,49 @@
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'package:mobile_scanner/mobile_scanner.dart';
+
+MobileScanner(
+  onDetect: (barcode, args) {
+    final String? code = barcode.rawValue;
+
+    if (code != null) {
+      print('Scanned barcode: $code');
+      fetchProduct(code); //
+    }
+  },
+)
+
+
+
+
+Future<void> fetchProduct(String barcode) async {
+  final url = Uri.parse(
+    'https://world.openfoodfacts.org/api/v0/product/$barcode.json',
+  );
+
+  try {
+    final response = await http.get(url);
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+
+      if (data['status'] == 1) {
+        final product = data['product'];
+
+        final name = product['product_name'];
+        final brand = product['brands'];
+        final ingredients = product['ingredients_text'];
+
+        print('Name: $name');
+        print('Brand: $brand');
+        print('Ingredients: $ingredients');
+      } else {
+        print('Product not found');
+      }
+    } else {
+      print('API error: ${response.statusCode}');
+    }
+  } catch (e) {
+    print('Error: $e');
+  }
+}
