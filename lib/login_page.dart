@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'signup_page.dart';
+import 'database_helper.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -11,6 +13,8 @@ class LoginPage extends StatefulWidget {
 class LoginPageState extends State<LoginPage> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+
+  final DatabaseHelper _dbHelper = DatabaseHelper();
 
   @override
   Widget build(BuildContext context) {
@@ -73,11 +77,7 @@ class LoginPageState extends State<LoginPage> {
                   width: double.infinity,
                   height: 50,
                   child: ElevatedButton(
-                    onPressed: () {
-                      // TODO: Implement login logic
-                      // For now, just navigate back or to home
-                      Navigator.pop(context);
-                    },
+                    onPressed: _login,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF1e3504),
                       shape: RoundedRectangleBorder(
@@ -96,11 +96,35 @@ class LoginPageState extends State<LoginPage> {
                 const SizedBox(height: 20),
                 TextButton(
                   onPressed: () {
-                    // TODO: Navigate to sign up page
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const SignupPage()),
+                    );
                   },
                   child: Text(
                     "Don't have an account? Sign Up",
                     style: GoogleFonts.questrial(
+                      color: const Color(0xFF1e3504),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                OutlinedButton(
+                  onPressed: () {
+                    // Continue without login (guest access)
+                    Navigator.pop(context);
+                  },
+                  style: OutlinedButton.styleFrom(
+                    side: const BorderSide(color: Color(0xFF1e3504)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    minimumSize: const Size(double.infinity, 50),
+                  ),
+                  child: Text(
+                    "Continue as Guest",
+                    style: GoogleFonts.questrial(
+                      fontSize: 18,
                       color: const Color(0xFF1e3504),
                     ),
                   ),
@@ -110,6 +134,30 @@ class LoginPageState extends State<LoginPage> {
           ),
         ),
       ),
+    );
+  }
+
+  void _login() async {
+    String email = _emailController.text.trim();
+    String password = _passwordController.text;
+
+    if (email.isEmpty || password.isEmpty) {
+      _showMessage('Please fill all fields');
+      return;
+    }
+
+    Map<String, dynamic>? user = await _dbHelper.getUserByEmail(email);
+    if (user != null && user['password'] == password) {
+      _showMessage('Login successful');
+      Navigator.pop(context);
+    } else {
+      _showMessage('Invalid email or password');
+    }
+  }
+
+  void _showMessage(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
     );
   }
 
