@@ -1,58 +1,91 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+
 import 'app_scaffold.dart';
 import 'scan_history.dart';
 
-class ResultPage extends StatelessWidget {
+class ResultPage extends StatefulWidget {
   final String barcode;
 
   const ResultPage({super.key, required this.barcode});
 
   @override
-  Widget build(BuildContext context) {
+  State<ResultPage> createState() => _ResultPageState();
+}
 
-    Map<String, Map<String, String>> fakeDatabase = {
-      "043000794609": {
-        "name": "Maxwell House Instant Coffee",
-        "company": "Kraft Heinz",
-        "status": "RECALL",
-        "details": "No recalls found for this product."
-      },
-      "032917001597": {
-        "name": "Traditional Medicinals Throat Coat Tea",
-        "company": "Traditional Medicinals",
-        "status": "SAFE",
-        "details": "No recalls found for this product."
+class _ResultPageState extends State<ResultPage> {
+  Map<String, dynamic>? data;
+  bool isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    fetchData();
+  }
+
+  Future<void> fetchData() async {
+    try {
+      final response = await http.get(
+        Uri.parse('http://localhost:5000/api/barcode/${widget.barcode}'),
+      );
+
+      if (response.statusCode == 200) {
+        setState(() {
+          data = json.decode(response.body);
+          isLoading = false;
+        });
+      } else {
+        setState(() {
+          isLoading = false;
+        });
       }
-    };
+    } catch (e) {
+      print("ERROR: $e");
+      setState(() {
+        isLoading = false;
+      });
+    }
+  }
 
-    final product = fakeDatabase[barcode] ?? {
-      "name": "Unknown Product",
-      "company": "Unknown Manufacturer",
-      "status": "UNKNOWN",
-      "details": "Product not found in database."
-    };
+  @override
+  Widget build(BuildContext context) {
+    if (isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (data == null) {
+      return const Center(child: Text("Error loading product"));
+    }
+
+    final product = data!['product'];
+    final recall = data!['recall'];
+
+    final name = product?['name'] ?? "Unknown Product";
+    final brand = product?['brand'] ?? "Unknown Manufacturer";
+
+    final isRecall = recall != null;
+
+    final details = recall != null
+        ? recall['reason_for_recall'] ?? "Recall found"
+        : "No recalls found for this product.";
 
     // Save to history
-    if (scanHistory.isEmpty || scanHistory.first["barcode"] != barcode) {
+    if (scanHistory.isEmpty || scanHistory.first["barcode"] != widget.barcode) {
       scanHistory.insert(0, {
-        "name": product["name"]!,
-        "barcode": barcode,
-        "status": product["status"]!,
+        "name": name,
+        "barcode": widget.barcode,
+        "status": isRecall ? "RECALL" : "SAFE",
       });
     }
 
-    final bool isRecall = product["status"] == "RECALL";
-
     return AppScaffold(
       title: "Scan Result",
-
       body: Center(
         child: Padding(
           padding: const EdgeInsets.all(20),
-
           child: Container(
             constraints: const BoxConstraints(maxWidth: 500),
-
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(20),
@@ -64,19 +97,16 @@ class ResultPage extends StatelessWidget {
                 )
               ],
             ),
-
             child: Padding(
               padding: const EdgeInsets.all(28),
-
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
-
                 children: [
 
                   /// Product Name
                   Text(
-                    product["name"]!,
+                    name,
                     style: const TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
@@ -87,7 +117,7 @@ class ResultPage extends StatelessWidget {
 
                   /// Manufacturer
                   Text(
-                    product["company"]!,
+                    brand,
                     style: TextStyle(
                       fontSize: 16,
                       color: Colors.grey[700],
@@ -99,7 +129,6 @@ class ResultPage extends StatelessWidget {
                   /// Status Row
                   Row(
                     children: [
-
                       const Text(
                         "Status:",
                         style: TextStyle(
@@ -115,17 +144,14 @@ class ResultPage extends StatelessWidget {
                           horizontal: 14,
                           vertical: 6,
                         ),
-
                         decoration: BoxDecoration(
                           color: isRecall
                               ? Colors.red.withOpacity(.15)
                               : Colors.green.withOpacity(.15),
-
                           borderRadius: BorderRadius.circular(20),
                         ),
-
                         child: Text(
-                          product["status"]!,
+                          isRecall ? "RECALL" : "SAFE",
                           style: TextStyle(
                             color: isRecall ? Colors.red : Colors.green,
                             fontWeight: FontWeight.bold,
@@ -149,7 +175,7 @@ class ResultPage extends StatelessWidget {
                   const SizedBox(height: 10),
 
                   Text(
-                    product["details"]!,
+                    details,
                     style: const TextStyle(
                       fontSize: 16,
                       height: 1.5,
@@ -163,12 +189,10 @@ class ResultPage extends StatelessWidget {
                     child: SizedBox(
                       width: 220,
                       height: 50,
-
                       child: ElevatedButton(
                         onPressed: () {
                           Navigator.pop(context);
                         },
-
                         child: const Text(
                           "Scan Another Item",
                           style: TextStyle(fontSize: 16),
