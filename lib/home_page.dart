@@ -35,7 +35,7 @@ class HomePage extends StatelessWidget {
                 const SizedBox(height: 20),
 
                 Text(
-                  "Scan food items instantly to check if they’ve been recalled. Powered by USDA / FDA data.",
+                  "Scan food items instantly to check if they’ve been recalled. Powered by FDA data.",
                   textAlign: TextAlign.center,
                   style: GoogleFonts.questrial(fontSize: 16),
                 ),
