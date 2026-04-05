@@ -1,9 +1,10 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-
 import 'app_scaffold.dart';
 import 'scan_history.dart';
+import 'database_helper.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class ResultPage extends StatefulWidget {
   final String barcode;
@@ -24,6 +25,26 @@ class _ResultPageState extends State<ResultPage> {
     fetchData();
   }
 
+  /// Save scan to database for logged-in users
+  Future<void> saveScan(String barcode, String productName) async {
+    final prefs = await SharedPreferences.getInstance();
+    final isLoggedIn = prefs.getBool('is_logged_in') ?? false;
+    if (!isLoggedIn) return;
+
+    final email = prefs.getString('user_email');
+    if (email == null) return;
+
+    final scan = {
+      'user_email': email,
+      'barcode': barcode,
+      'product_name': productName,
+      'timestamp': DateTime.now().toIso8601String(),
+    };
+
+    await DatabaseHelper().insertScan(scan);
+  }
+
+  /// Fetch product & recall data from your API
   Future<void> fetchData() async {
     try {
       final response = await http.get(
@@ -31,8 +52,15 @@ class _ResultPageState extends State<ResultPage> {
       );
 
       if (response.statusCode == 200) {
+        final decoded = json.decode(response.body);
+        final product = decoded['product'];
+        final name = product?['name'] ?? "Unknown Product";
+
+        // Save scan in DB for logged-in users
+        await saveScan(widget.barcode, name);
+
         setState(() {
-          data = json.decode(response.body);
+          data = decoded;
           isLoading = false;
         });
       } else {
@@ -63,14 +91,12 @@ class _ResultPageState extends State<ResultPage> {
 
     final name = product?['name'] ?? "Unknown Product";
     final brand = product?['brand'] ?? "Unknown Manufacturer";
-
     final isRecall = recall != null;
-
     final details = recall != null
         ? recall['reason_for_recall'] ?? "Recall found"
         : "No recalls found for this product.";
 
-    // Save to history
+    // Add to local scan history for guest users
     if (scanHistory.isEmpty || scanHistory.first["barcode"] != widget.barcode) {
       scanHistory.insert(0, {
         "name": name,
@@ -126,7 +152,7 @@ class _ResultPageState extends State<ResultPage> {
 
                   const SizedBox(height: 25),
 
-                  /// Status Row
+                  /// Status
                   Row(
                     children: [
                       const Text(
@@ -136,9 +162,7 @@ class _ResultPageState extends State<ResultPage> {
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-
                       const SizedBox(width: 12),
-
                       Container(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 14,
@@ -171,9 +195,7 @@ class _ResultPageState extends State<ResultPage> {
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-
                   const SizedBox(height: 10),
-
                   Text(
                     details,
                     style: const TextStyle(
@@ -184,7 +206,7 @@ class _ResultPageState extends State<ResultPage> {
 
                   const SizedBox(height: 35),
 
-                  /// Button
+                  /// Scan Another Item Button
                   Center(
                     child: SizedBox(
                       width: 220,

@@ -38,98 +38,105 @@ class SignupPageState extends State<SignupPage> {
           constraints: const BoxConstraints(maxWidth: 400),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  "Create Account",
-                  style: GoogleFonts.quattrocento(
-                    color: const Color(0xFF1e3504),
-                    fontSize: 32,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 40),
-                TextField(
-                  controller: _nameController,
-                  decoration: InputDecoration(
-                    labelText: 'Full Name',
-                    labelStyle: GoogleFonts.questrial(),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const SizedBox(height: 40),
+                  Text(
+                    "Create Account",
+                    style: GoogleFonts.quattrocento(
+                      color: const Color(0xFF1e3504),
+                      fontSize: 32,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
-                ),
-                const SizedBox(height: 20),
-                TextField(
-                  controller: _emailController,
-                  decoration: InputDecoration(
-                    labelText: 'Email',
-                    labelStyle: GoogleFonts.questrial(),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                  keyboardType: TextInputType.emailAddress,
-                ),
-                const SizedBox(height: 20),
-                TextField(
-                  controller: _passwordController,
-                  decoration: InputDecoration(
-                    labelText: 'Password',
-                    labelStyle: GoogleFonts.questrial(),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                  obscureText: true,
-                ),
-                const SizedBox(height: 20),
-                TextField(
-                  controller: _confirmPasswordController,
-                  decoration: InputDecoration(
-                    labelText: 'Confirm Password',
-                    labelStyle: GoogleFonts.questrial(),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                  obscureText: true,
-                ),
-                const SizedBox(height: 40),
-                SizedBox(
-                  width: double.infinity,
-                  height: 50,
-                  child: ElevatedButton(
-                    onPressed: _signup,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF1e3504),
-                      shape: RoundedRectangleBorder(
+                  const SizedBox(height: 40),
+                  TextField(
+                    controller: _nameController,
+                    decoration: InputDecoration(
+                      labelText: 'Full Name',
+                      labelStyle: GoogleFonts.questrial(),
+                      border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
                       ),
                     ),
-                    child: Text(
-                      "Sign Up",
-                      style: GoogleFonts.questrial(
-                        fontSize: 18,
-                        color: Colors.white,
+                  ),
+                  const SizedBox(height: 20),
+                  TextField(
+                    controller: _emailController,
+                    decoration: InputDecoration(
+                      labelText: 'Email',
+                      labelStyle: GoogleFonts.questrial(),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    keyboardType: TextInputType.emailAddress,
+                  ),
+                  const SizedBox(height: 20),
+                  TextField(
+                    controller: _passwordController,
+                    decoration: InputDecoration(
+                      labelText: 'Password',
+                      labelStyle: GoogleFonts.questrial(),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    obscureText: true,
+                  ),
+                  const SizedBox(height: 20),
+                  TextField(
+                    controller: _confirmPasswordController,
+                    decoration: InputDecoration(
+                      labelText: 'Confirm Password',
+                      labelStyle: GoogleFonts.questrial(),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    obscureText: true,
+                  ),
+                  const SizedBox(height: 40),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 50,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        print("BUTTON PRESSED"); // debug print
+                        _signup();
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF1e3504),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      child: Text(
+                        "Sign Up",
+                        style: GoogleFonts.questrial(
+                          fontSize: 18,
+                          color: Colors.white,
+                        ),
                       ),
                     ),
                   ),
-                ),
-                const SizedBox(height: 20),
-                TextButton(
-                  onPressed: () {
-                    Navigator.pop(context);
-                  },
-                  child: Text(
-                    "Already have an account? Login",
-                    style: GoogleFonts.questrial(
-                      color: const Color(0xFF1e3504),
+                  const SizedBox(height: 20),
+                  TextButton(
+                    onPressed: () {
+                      Navigator.pop(context);
+                    },
+                    child: Text(
+                      "Already have an account? Login",
+                      style: GoogleFonts.questrial(
+                        color: const Color(0xFF1e3504),
+                      ),
                     ),
                   ),
-                ),
-              ],
+                  const SizedBox(height: 40),
+                ],
+              ),
             ),
           ),
         ),
@@ -138,6 +145,8 @@ class SignupPageState extends State<SignupPage> {
   }
 
   void _signup() async {
+    print("SIGNUP CLICKED"); // debug
+
     String name = _nameController.text.trim();
     String email = _emailController.text.trim();
     String password = _passwordController.text;
@@ -153,24 +162,28 @@ class SignupPageState extends State<SignupPage> {
       return;
     }
 
-    // Check if user already exists
     Map<String, dynamic>? existingUser = await _dbHelper.getUserByEmail(email);
     if (existingUser != null) {
-      _showMessage('User with this email already exists');
+      _showMessage('User already exists');
       return;
     }
 
-    // Insert new user
     Map<String, dynamic> user = {
       'name': name,
       'email': email,
-      'password': password, // In production, hash the password
+      'password': password,
     };
 
     int result = await _dbHelper.insertUser(user);
+    print("Insert result: $result"); // debug
+
     if (result > 0) {
-      _showMessage('Account created successfully');
-      Navigator.pop(context);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Account created!")),
+      );
+      Future.delayed(const Duration(seconds: 1), () {
+        Navigator.pop(context);
+      });
     } else {
       _showMessage('Failed to create account');
     }

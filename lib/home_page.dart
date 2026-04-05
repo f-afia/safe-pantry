@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'app_scaffold.dart';          // <-- Import your reusable scaffold
+import 'app_scaffold.dart';        
 import 'scanner_page.dart'; 
-
+import 'login_page.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});

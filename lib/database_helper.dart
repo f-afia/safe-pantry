@@ -1,25 +1,37 @@
+import 'package:flutter/foundation.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
-import 'package:path_provider/path_provider.dart';
-import 'dart:io';
+
+// =====================
+// WEB STORAGE (temporary)
+// =====================
+List<Map<String, dynamic>> webUsers = [];
+List<Map<String, dynamic>> webScans = [];
 
 class DatabaseHelper {
   static final DatabaseHelper _instance = DatabaseHelper._internal();
-  static Database? _database;
-
   factory DatabaseHelper() => _instance;
+
+  static Database? _database;
 
   DatabaseHelper._internal();
 
-  Future<Database> get database async {
+  // =====================
+  // DATABASE INIT
+  // =====================
+
+  Future<Database?> get database async {
+    if (kIsWeb) return null;
+
     if (_database != null) return _database!;
     _database = await _initDatabase();
     return _database!;
   }
 
   Future<Database> _initDatabase() async {
-    Directory documentsDirectory = await getApplicationDocumentsDirectory();
-    String path = join(documentsDirectory.path, 'safe_pantry.db');
+    final dbPath = await getDatabasesPath();
+    final path = join(dbPath, 'app.db');
+
     return await openDatabase(
       path,
       version: 1,
@@ -31,30 +43,94 @@ class DatabaseHelper {
     await db.execute('''
       CREATE TABLE users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT,
         email TEXT UNIQUE,
-        password TEXT,
-        name TEXT
+        password TEXT
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE scans (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_email TEXT,
+        barcode TEXT,
+        product_name TEXT,
+        status TEXT,
+        timestamp TEXT
       )
     ''');
   }
 
-  Future<int> insertUser(Map<String, dynamic> user) async {
-    Database db = await database;
-    return await db.insert('users', user);
-  }
+  // =====================
+  // USER FUNCTIONS
+  // =====================
 
-  Future<List<Map<String, dynamic>>> getUsers() async {
-    Database db = await database;
-    return await db.query('users');
+  Future<int> insertUser(Map<String, dynamic> user) async {
+    if (kIsWeb) {
+      webUsers.add(user);
+      print("WEB USERS: $webUsers");
+      return 1;
+    }
+
+    final db = await database;
+    return await db!.insert(
+      'users',
+      user,
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
   }
 
   Future<Map<String, dynamic>?> getUserByEmail(String email) async {
-    Database db = await database;
-    List<Map<String, dynamic>> result = await db.query(
+    if (kIsWeb) {
+      try {
+        return webUsers.firstWhere((user) => user['email'] == email);
+      } catch (e) {
+        return null;
+      }
+    }
+
+    final db = await database;
+    final result = await db!.query(
       'users',
       where: 'email = ?',
       whereArgs: [email],
     );
+
     return result.isNotEmpty ? result.first : null;
+  }
+
+  // =====================
+  // SCAN FUNCTIONS
+  // =====================
+
+  Future<int> insertScan(Map<String, dynamic> scan) async {
+    if (kIsWeb) {
+      webScans.add(scan);
+      print("WEB SCANS: $webScans");
+      return 1;
+    }
+
+    final db = await database;
+    return await db!.insert(
+      'scans',
+      scan,
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  Future<List<Map<String, dynamic>>> getScansByUser(String email) async {
+    if (kIsWeb) {
+      return webScans
+          .where((scan) => scan['user_email'] == email)
+          .toList();
+    }
+
+    final db = await database;
+    return await db!.query(
+      'scans',
+      where: 'user_email = ?',
+      whereArgs: [email],
+      orderBy: 'timestamp DESC',
+    );
   }
 }

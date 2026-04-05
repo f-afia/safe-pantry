@@ -1,31 +1,23 @@
 require("dotenv").config();
-
 const axios = require("axios");
 const express = require("express");
 const cors = require("cors");
 const OpenAI = require("openai");
 
 const app = express();
-
 app.use(cors());
 app.use(express.json());
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-// ✅ AI FUNCTION
+// ✅ AI MATCHING FUNCTION
 async function isRecallMatch(productName, recallDescription) {
   if (!productName || !recallDescription) return false;
 
-  const prompt = `
-Product: "${productName}"
-Recall: "${recallDescription}"
+  const prompt = `Product: "${productName}"
+Recall Description: "${recallDescription}"
 
-Are these the SAME or RELATED product?
-
-Answer ONLY "YES" or "NO".
-`;
+Is this the SAME product being recalled? Answer ONLY "YES" or "NO".`;
 
   try {
     const response = await openai.chat.completions.create({
@@ -33,104 +25,128 @@ Answer ONLY "YES" or "NO".
       messages: [{ role: "user", content: prompt }],
     });
 
-    const answer = response.choices[0].message.content
+    return response.choices[0].message.content
       .trim()
-      .toUpperCase();
-
-    return answer.includes("YES");
+      .toUpperCase()
+      .includes("YES");
   } catch (err) {
-    console.error("AI error:", err);
-    return false; // fail safe
+    console.error("AI Error:", err.message);
+    return false;
   }
 }
 
-// test route
-app.get("/", (req, res) => {
-  res.send("Backend is running!");
-});
-
-// barcode route
+// ✅ MAIN ROUTE
 app.get("/api/barcode/:barcode", async (req, res) => {
   const barcode = req.params.barcode;
 
   try {
-    // 1️⃣ Get product from OpenFoodFacts
-    const url = `https://world.openfoodfacts.org/api/v0/product/${barcode}.json`;
-    const response = await axios.get(url);
+    // =========================
+    // 1. GET PRODUCT FROM OFF
+    // =========================
+    const offUrl = `https://world.openfoodfacts.org/api/v0/product/${barcode}.json`;
+    const offRes = await axios.get(offUrl);
 
-    if (response.data.status === 0) {
-      return res.status(404).json({ message: "Product not found" });
+    if (offRes.data.status === 0) {
+      return res.status(404).json({
+        message: "Product not found in OpenFoodFacts",
+      });
     }
 
-    const product = response.data.product;
-    const productName = product.product_name;
+    const product = offRes.data.product;
+    const productName = product.product_name || "";
+    const brand = product.brands
+      ? product.brands.split(",")[0].trim()
+      : "";
 
-    // 2️⃣ Get FDA recall
+    console.log("Product:", productName, "| Brand:", brand);
+
     let recallData = null;
 
-    if (productName) {
+    // =========================
+    // 2. PLAN A: BARCODE SEARCH
+    // =========================
+    try {
+      const fdaBarcodeUrl = `https://api.fda.gov/food/enforcement.json?search=code_info:"${barcode}"+OR+product_description:"${barcode}"&limit=1`;
+
+      const fdaRes = await axios.get(fdaBarcodeUrl);
+
+      if (fdaRes.data.results) {
+        recallData = fdaRes.data.results[0];
+        console.log("Direct barcode match found");
+      }
+    } catch (err) {
+      console.log("No barcode recall match");
+    }
+
+    // =========================
+    // 3. PLAN B: NAME + BRAND
+    // =========================
+    if (!recallData && productName) {
       try {
-        const fdaUrl = `https://api.fda.gov/food/enforcement.json?search=product_description:${productName}&limit=1`;
-        const fdaResponse = await axios.get(fdaUrl);
+        const cleanName = productName
+          .replace(/[^a-zA-Z0-9 ]/g, "")
+          .split(" ")
+          .slice(0, 4)
+          .join(" ");
 
-        recallData = fdaResponse.data.results
-          ? fdaResponse.data.results[0]
-          : null;
+        const cleanBrand = brand.replace(/[^a-zA-Z0-9 ]/g, "");
+
+        const query = cleanBrand
+          ? `product_description:"${cleanName}"+AND+recalling_firm:"${cleanBrand}"`
+          : `product_description:"${cleanName}"`;
+
+        const fdaUrl = `https://api.fda.gov/food/enforcement.json?search=${query}&limit=5`;
+
+        const fdaRes = await axios.get(fdaUrl);
+
+        if (fdaRes.data.results) {
+          for (const item of fdaRes.data.results) {
+            console.log(
+              "Comparing:",
+              productName,
+              "VS",
+              item.product_description
+            );
+
+            const match = await isRecallMatch(
+              productName,
+              item.product_description
+            );
+
+            if (match) {
+              recallData = item;
+              console.log("AI confirmed match");
+              break;
+            }
+          }
+        }
       } catch (err) {
-        recallData = null;
+        console.log("No fuzzy recall match");
       }
     }
 
-    // 3️⃣ AI FILTER (IMPORTANT)
-    if (recallData && productName) {
-      const match = await isRecallMatch(
-        productName,
-        recallData.product_description
-      );
-
-      if (!match) {
-        recallData = null;
-      }
-    }
-
-    // 4️⃣ Return result
+    // =========================
+    // 4. FINAL RESPONSE
+    // =========================
     res.json({
       product: {
-        name: product.product_name,
+        name: productName,
         brand: product.brands,
         image: product.image_url,
       },
       recall: recallData,
     });
-
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Error fetching data" });
+    console.error("SERVER ERROR:", error.message);
+    res.status(500).json({
+      message: "Internal server error",
+      error: error.message,
+    });
   }
 });
 
+// ✅ START SERVER
 const PORT = 5000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
-});
-
-app.get("/api/recalls", async (req, res) => {
-  try {
-    const url = `https://api.fda.gov/food/enforcement.json?limit=15&sort=report_date:desc`;
-
-    const response = await axios.get(url);
-
-    const recalls = response.data.results.map(r => ({
-      product: r.product_description,
-      reason: r.reason_for_recall,
-      company: r.recalling_firm,
-      date: r.report_date,
-    }));
-
-    res.json(recalls);
-
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Error fetching recalls" });
-  }
 });
