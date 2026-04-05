@@ -133,4 +133,14 @@ class DatabaseHelper {
       orderBy: 'timestamp DESC',
     );
   }
+  Future<void> clearAllScans() async {
+  if (kIsWeb) {
+    webScans.clear();
+    print("WEB SCANS CLEARED");
+    return;
+  }
+
+  final db = await database;
+  await db!.delete('scans');
+}
 }

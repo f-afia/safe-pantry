@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-
+import 'package:shared_preferences/shared_preferences.dart';
+import 'database_helper.dart';
 import 'scanner_page.dart';
 import 'past_scans_page.dart';
 import 'recent_recalls_page.dart';
@@ -23,39 +24,32 @@ class AppScaffold extends StatelessWidget {
           children: [
             const DrawerHeader(child: Text("Menu")),
 
-          ListTile(
-                        title: const Text("Home"),
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const HomePage(),
-                            ),
-                          );
-                        },
-                      ),
+            ListTile(
+              title: const Text("Home"),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const HomePage()),
+                );
+              },
+            ),
 
             ListTile(
               title: const Text("Login"),
               onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(
-                    builder: (context) => const LoginPage(),
-                  ),
+                  MaterialPageRoute(builder: (context) => const LoginPage()),
                 );
               },
             ),
-
 
             ListTile(
               title: const Text("Scan Your Item"),
               onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(
-                    builder: (context) => const ScannerPage(),
-                  ),
+                  MaterialPageRoute(builder: (context) => const ScannerPage()),
                 );
               },
             ),
@@ -65,9 +59,7 @@ class AppScaffold extends StatelessWidget {
               onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(
-                    builder: (context) => const PastScansPage(),
-                  ),
+                  MaterialPageRoute(builder: (context) => const PastScansPage()),
                 );
               },
             ),
@@ -77,14 +69,31 @@ class AppScaffold extends StatelessWidget {
               onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(
-                    builder: (context) => const RecentRecallsPage(),
-                  ),
+                  MaterialPageRoute(builder: (context) => const RecentRecallsPage()),
                 );
               },
             ),
 
-          const ListTile(title: Text("How It Works")),
+            const ListTile(title: Text("How It Works")),
+
+            // ✅ LOGOUT BUTTON (added)
+            ListTile(
+              title: const Text("Logout"),
+              onTap: () async {
+  final prefs = await SharedPreferences.getInstance();
+
+  // ✅ clear scans too
+  await DatabaseHelper().clearAllScans();
+
+  await prefs.clear();
+
+  Navigator.pushAndRemoveUntil(
+    context,
+    MaterialPageRoute(builder: (context) => const LoginPage()),
+    (route) => false,
+  );
+},
+            ),
           ],
         ),
       ),
