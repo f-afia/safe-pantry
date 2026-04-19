@@ -1,26 +1,34 @@
-# food_recall_app
+# Safe Pantry – Food Recall Scanner App
 
 Conveniently scan food products to see if a relevant recall exists. This is for US consumers only. This app works with food products (including non-drug supplements) but does not cover pet foods, cosmetics, medical devis, or drugs.
 
-## Getting Started
+ The application combines:
+- A Flutter-based frontend (web application)
+- A Node.js backend
+- External APIs (FDA Recall API + OpenFoodFacts API)
+- Optional AI-based recall matching (OpenAI integration)
 
-This project is a Flutter application.
 
-A few resources about Flutter projects:
-
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
 
 ## Running this project
 
-1. Download all main branch files.
 
-2. Request the OpenAI API key. GitHub policy does not allow API keys to included in public projects.
+### 1. Start the Backend Server
 
-3. On your computer, create a ".env" file. Paste the following
-OPENAI_API_KEY= [requested key]
+Make sure you are in the project root folder, then run:
 
-4. Run the main file
+```bash
+npm install
+node server.js
+```
+2. Open the Frontend (Web App)
 
+After building the Flutter project, open:
 
+build/web/index.html
+
+NOTE:
+The backend must be running for the app to fetch product and recall data.
+The AI recall matching feature requires an OpenAI API key.
+If no API key is provided, the app will still function using basic recall matching.
+The frontend currently uses localhost for API requests, so both frontend and backend must run on the same machine.
