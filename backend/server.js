@@ -10,8 +10,14 @@ app.use(express.json());
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-// ✅ AI MATCHING FUNCTION
+// ✅ AI MATCHING FUNCTION (SAFE VERSION)
 async function isRecallMatch(productName, recallDescription) {
+  // 🚨 NEW: Skip AI if no API key
+  if (!process.env.OPENAI_API_KEY) {
+    console.log("No OpenAI key found, skipping AI matching");
+    return false;
+  }
+
   if (!productName || !recallDescription) return false;
 
   const prompt = `Product: "${productName}"
@@ -35,7 +41,28 @@ Is this the SAME product being recalled? Answer ONLY "YES" or "NO".`;
   }
 }
 
-// ✅ MAIN ROUTE
+
+
+app.get("/api/recalls", async (req, res) => {
+  try {
+ 
+    const fdaUrl = `https://api.fda.gov/food/enforcement.json?limit=10&sort=report_date:desc`;
+    const fdaRes = await axios.get(fdaUrl);
+
+    const recalls = fdaRes.data.results.map(item => ({
+      product: item.product_description ?? "Unknown Product",
+      company: item.recalling_firm ?? "Unknown Manufacturer",
+      date: item.report_date ?? "",
+      reason: item.reason_for_recall ?? "",
+      details: `Product: ${item.product_description ?? ""}\nReason: ${item.reason_for_recall ?? ""}\nCompany: ${item.recalling_firm ?? ""}\nCode Info: ${item.code_info ?? ""}`,
+    }));
+
+    res.json(recalls);
+  } catch (err) {
+    console.error("Error fetching recent recalls:", err.message);
+    res.status(500).json({ message: "Failed to fetch recalls", error: err.message });
+  }
+});
 app.get("/api/barcode/:barcode", async (req, res) => {
   const barcode = req.params.barcode;
 
@@ -145,7 +172,7 @@ app.get("/api/barcode/:barcode", async (req, res) => {
   }
 });
 
-// ✅ START SERVER
+
 const PORT = 5000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);

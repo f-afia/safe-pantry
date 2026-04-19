@@ -23,27 +23,29 @@ class _RecentRecallsPageState extends State<RecentRecallsPage> {
 
   Future<void> fetchRecalls() async {
     try {
-      final url = Uri.parse('http://localhost:5000/api/recalls'); // your backend
+      final url = Uri.parse('http://localhost:5000/api/recalls');
+      
+
       final response = await http.get(url);
+
+      // ✅ DEBUG PRINTS
+      print("STATUS: ${response.statusCode}");
+      print("BODY: ${response.body}");
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body) as List<dynamic>;
 
-        recalls = data.map((item) {
-          // Full product text for More Info
-          final fullProduct = (item['product'] ?? 'Unknown Product').toString();
+        final loadedRecalls = data.map((item) {
+          final fullProduct =
+              (item['product'] ?? 'Unknown Product').toString();
 
-          // Truncate title for list display
-          String product = fullProduct;
-          if (product.length > 50) {
-            product = '${product.substring(0, 50)}...';
-          }
+          String product = fullProduct.length > 50
+              ? '${fullProduct.substring(0, 50)}...'
+              : fullProduct;
 
-          // Combine full product + recall details for the dialog
           final details =
               '$fullProduct\n\n${(item['details'] ?? '').toString()}';
 
-          // Format date YYYYMMDD -> MM/DD/YYYY
           String rawDate = (item['date'] ?? '').toString();
           String formattedDate = rawDate.length == 8
               ? '${rawDate.substring(4, 6)}/${rawDate.substring(6, 8)}/${rawDate.substring(0, 4)}'
@@ -51,7 +53,8 @@ class _RecentRecallsPageState extends State<RecentRecallsPage> {
 
           return <String, String>{
             'product': product,
-            'company': (item['company'] ?? 'Unknown Manufacturer').toString(),
+            'company':
+                (item['company'] ?? 'Unknown Manufacturer').toString(),
             'date': formattedDate,
             'reason': (item['reason'] ?? '').toString(),
             'details': details,
@@ -59,6 +62,7 @@ class _RecentRecallsPageState extends State<RecentRecallsPage> {
         }).toList();
 
         setState(() {
+          recalls = loadedRecalls;
           loading = false;
         });
       } else {
@@ -85,89 +89,98 @@ class _RecentRecallsPageState extends State<RecentRecallsPage> {
             ? const Center(child: CircularProgressIndicator())
             : error != null
                 ? Center(child: Text(error!))
-                : ListView.builder(
-                    itemCount: recalls.length,
-                    itemBuilder: (context, index) {
-                      final recall = recalls[index];
-                      return Container(
-                        margin: const EdgeInsets.only(bottom: 16),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(18),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(.08),
-                              blurRadius: 10,
-                              offset: const Offset(0, 4),
-                            )
-                          ],
+                : recalls.isEmpty
+                    ? const Center(
+                        child: Text(
+                          "No recent recalls found",
+                          style: TextStyle(fontSize: 16),
                         ),
-                        child: Padding(
-                          padding: const EdgeInsets.all(20),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              // Product title (truncated)
-                              Text(
-                                recall['product']!,
-                                style: const TextStyle(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
+                      )
+                    : ListView.builder(
+                        itemCount: recalls.length,
+                        itemBuilder: (context, index) {
+                          final recall = recalls[index];
+                          return Container(
+                            margin: const EdgeInsets.only(bottom: 16),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(18),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(.08),
+                                  blurRadius: 10,
+                                  offset: const Offset(0, 4),
+                                )
+                              ],
+                            ),
+                            child: Padding(
+                              padding: const EdgeInsets.all(20),
+                              child: Column(
+                                crossAxisAlignment:
+                                    CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    recall['product']!,
+                                    style: const TextStyle(
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
 
-                              // Company
-                              Text(
-                                recall['company']!,
-                                style: TextStyle(color: Colors.grey[700]),
-                              ),
-                              const SizedBox(height: 12),
+                                  Text(
+                                    recall['company']!,
+                                    style: TextStyle(
+                                        color: Colors.grey[700]),
+                                  ),
+                                  const SizedBox(height: 12),
 
-                              // Date
-                              Text(
-                                'Recall Date: ${recall['date']}',
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              const SizedBox(height: 10),
+                                  Text(
+                                    'Recall Date: ${recall['date']}',
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 10),
 
-                              // Reason
-                              Text(recall['reason']!),
-                              const SizedBox(height: 14),
+                                  Text(recall['reason']!),
+                                  const SizedBox(height: 14),
 
-                              // More Info button
-                              TextButton(
-                                onPressed: () {
-                                  showDialog(
-                                    context: context,
-                                    builder: (context) {
-                                      return AlertDialog(
-                                        title: Text(recall['product']!),
-                                        content: SingleChildScrollView(
-                                          child: Text(recall['details']!),
-                                        ),
-                                        actions: [
-                                          TextButton(
-                                            onPressed: () {
-                                              Navigator.pop(context);
-                                            },
-                                            child: const Text('Close'),
-                                          )
-                                        ],
+                                  TextButton(
+                                    onPressed: () {
+                                      showDialog(
+                                        context: context,
+                                        builder: (context) {
+                                          return AlertDialog(
+                                            title:
+                                                Text(recall['product']!),
+                                            content:
+                                                SingleChildScrollView(
+                                              child: Text(
+                                                  recall['details']!),
+                                            ),
+                                            actions: [
+                                              TextButton(
+                                                onPressed: () {
+                                                  Navigator.pop(
+                                                      context);
+                                                },
+                                                child:
+                                                    const Text('Close'),
+                                              )
+                                            ],
+                                          );
+                                        },
                                       );
                                     },
-                                  );
-                                },
-                                child: const Text('More Info'),
+                                    child: const Text('More Info'),
+                                  ),
+                                ],
                               ),
-                            ],
-                          ),
-                        ),
-                      );
-                    },
-                  ),
+                            ),
+                          );
+                        },
+                      ),
       ),
     );
   }
