@@ -36,5 +36,4 @@ http://localhost:8000
 NOTE:
 The backend must be running for the app to fetch product and recall data.
 The AI recall matching feature requires an OpenAI API key.
-If no API key is provided, the app will still function using basic recall matching.
 The frontend currently uses localhost for API requests, so both frontend and backend must run on the same machine.
