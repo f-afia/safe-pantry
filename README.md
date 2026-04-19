@@ -23,10 +23,11 @@ node server.js
 ```
 2. Open the Frontend (Web App)
 
-After building the Flutter project, open:
-
-build/web/index.html
-
+er building the Flutter project, serve the web build using a local server:
+```bash
+cd build/web
+python3 -m http.server 8000
+```
 NOTE:
 The backend must be running for the app to fetch product and recall data.
 The AI recall matching feature requires an OpenAI API key.
