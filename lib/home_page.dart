@@ -22,16 +22,13 @@ class HomePage extends StatelessWidget {
 
                 const SizedBox(height: 80),
 
-                Text(
-                  "SafePantry",
-                  style: GoogleFonts.quattrocento(
-                    color: const Color(0xFF1e3504),
-                    fontSize: 45,
-                    fontWeight: FontWeight.bold,
-                    height: 1.1, 
-                    letterSpacing: 2,
-                  ),
+                Image.asset(
+                  'assets/logo.png',
+                  height: 100, // Adjust height as needed
+                  fit: BoxFit.contain,
                 ),
+
+
 
                 const SizedBox(height: 20),
 
