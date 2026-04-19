@@ -23,7 +23,7 @@ node server.js
 ```
 2. Open the Frontend (Web App)
 
-er building the Flutter project, serve the web build using a local server:
+To build the Flutter project, serve the web build using a local server:
 ```bash
 cd build/web
 python3 -m http.server 8000
